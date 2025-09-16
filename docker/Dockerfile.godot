@@ -1,0 +1,13 @@
+ARG JDK_VERSION
+
+FROM alvrme/alpine-android-base:jdk${JDK_VERSION}
+
+ARG BUILD_TOOLS
+ARG TARGET_SDK
+ARG NDK_VERSION
+
+# Install SDK Packages
+# @todo We don't actually need NDK, right?
+#RUN sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "ndk;28.1.13356709"
+
+# @todo Do the aapt hack thing?

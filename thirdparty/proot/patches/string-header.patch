@@ -1,0 +1,10 @@
+diff --git a/src/extension/ashmem_memfd/ashmem_memfd.c b/src/extension/ashmem_memfd/ashmem_memfd.c
+index df3f3b5..632e5e6 100644
+--- a/src/extension/ashmem_memfd/ashmem_memfd.c
++++ b/src/extension/ashmem_memfd/ashmem_memfd.c
+@@ -1,4 +1,5 @@
+ #include <stdlib.h>
++#include <string.h>
+ #include <signal.h>
+ #include <unistd.h>
+ #include <sys/syscall.h>  /* __NR_memfd_create,  */
