@@ -11,14 +11,16 @@ android {
 
     sourceSets {
         main {
-            jniLibs.srcDirs += ['../thirdparty/proot/build/bin']
+            jniLibs.srcDirs += [
+                '../thirdparty/proot/build/bin',
+            ]
         }
     }
 
     defaultConfig {
         applicationId "org.godotengine.godot_gradle_build_environment"
         minSdk 24
-        targetSdk 32
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 

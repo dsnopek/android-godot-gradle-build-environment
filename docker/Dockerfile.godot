@@ -4,10 +4,21 @@ FROM alvrme/alpine-android-base:jdk${JDK_VERSION}
 
 ARG BUILD_TOOLS
 ARG TARGET_SDK
-ARG NDK_VERSION
 
-# Install SDK Packages
-# @todo We don't actually need NDK, right?
-#RUN sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --install "ndk;28.1.13356709"
+RUN apk add tzdata
 
-# @todo Do the aapt hack thing?
+# Install the arm64 build of the Android build tools.
+COPY android-sdk-tools/build-tools /opt/sdk/build-tools/$BUILD_TOOLS/
+ENV PATH="${PATH}:/opt/sdk/build-tools/$BUILD_TOOLS"
+
+# Docker won't let us write /etc/resolv.conf so we write resolv.conf.override and
+# move it when unpacking the rootfs.
+COPY resolv.conf /etc/resolv.conf.override
+
+# Since we don't automatically get the Docker metadata, write important environment variables.
+RUN echo "PATH=$PATH" >> /env \
+ && echo "HOME=/home/android" >> /env \
+ && echo "JAVA_HOME=$JAVA_HOME" >> /env \
+ && echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> /env \
+ && echo "ANDROID_HOME=$ANDROID_HOME" >> /env
+
