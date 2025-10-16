@@ -157,6 +157,7 @@ fun RootfsInstallOrDeleteButton(
 
         !fileExists -> {
             Text(stringResource(R.string.missing_rootfs_message))
+            Spacer(modifier = Modifier.height(20.dp))
             Button(onClick = {
                 isLoading = true
                 scope.launch(Dispatchers.IO) {
@@ -179,6 +180,7 @@ fun RootfsInstallOrDeleteButton(
 
         else -> {
             Text(stringResource(R.string.rootfs_ready_message))
+            Spacer(modifier = Modifier.height(20.dp))
             Button(onClick = {
                 isLoading = true
                 scope.launch(Dispatchers.IO) {
