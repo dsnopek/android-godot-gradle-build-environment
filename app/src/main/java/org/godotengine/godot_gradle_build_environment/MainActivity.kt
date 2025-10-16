@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
 
     private fun extractRootfs() {
         val rootfs = AppPaths.getRootfs(this)
+        if (rootfs.exists()) {
+            rootfs.deleteRecursively()
+        }
         rootfs.mkdirs()
         TarXzExtractor.extractAssetTarXz(this, "linux-rootfs/alpine-android-35-jdk17.tar.xz", rootfs)
 
