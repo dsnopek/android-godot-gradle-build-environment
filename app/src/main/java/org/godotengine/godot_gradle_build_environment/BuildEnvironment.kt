@@ -270,7 +270,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         }
     }
 
-    fun installRootfs(outputHandler: (Int, String) -> Unit) {
+    fun installRootfs(localUri: Uri? = null, outputHandler: (Int, String) -> Unit) {
         val rootfs = File(this.rootfs)
 
         if (rootfs.exists()) {
@@ -280,34 +280,39 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
 
         rootfs.mkdirs()
 
-        val hasAsset = try {
-            context.assets.list("linux-rootfs")?.contains(ROOTFS_FILENAME) == true
-        } catch (e: Exception) {
-            false
-        }
-
         val version: String
-        if (hasAsset) {
-            outputHandler(OUTPUT_INFO, "> Extracting rootfs from assets...")
-            TarXzExtractor.extractAssetTarXz(context, ROOTFS_ASSET_PATH, rootfs)
+        if (localUri != null) {
+            outputHandler(OUTPUT_INFO, "> Extracting rootfs from local file...")
+            TarXzExtractor.extractLocalTarXz(context, localUri, rootfs)
             version = ROOTFS_VERSION_CUSTOM
         } else {
-            val tempFile = File(context.cacheDir, ROOTFS_FILENAME)
-            try {
-                val releaseTag = GitHubReleaseDownloader.downloadLatestReleaseAsset(
-                    ROOTFS_GITHUB_REPO,
-                    ROOTFS_FILENAME,
-                    tempFile
-                ) { message ->
-                    outputHandler(OUTPUT_INFO, message)
-                }
-                version = releaseTag
+            val hasAsset = try {
+                context.assets.list("linux-rootfs")?.contains(ROOTFS_FILENAME) == true
+            } catch (e: Exception) {
+                false
+            }
+            if (hasAsset) {
+                outputHandler(OUTPUT_INFO, "> Extracting rootfs from assets...")
+                TarXzExtractor.extractAssetTarXz(context, ROOTFS_ASSET_PATH, rootfs)
+                version = ROOTFS_VERSION_CUSTOM
+            } else {
+                val tempFile = File(context.cacheDir, ROOTFS_FILENAME)
+                try {
+                    val releaseTag = GitHubReleaseDownloader.downloadLatestReleaseAsset(
+                        ROOTFS_GITHUB_REPO,
+                        ROOTFS_FILENAME,
+                        tempFile
+                    ) { message ->
+                        outputHandler(OUTPUT_INFO, message)
+                    }
+                    version = releaseTag
 
-                outputHandler(OUTPUT_INFO, "> Extracting rootfs...")
-                TarXzExtractor.extractFileTarXz(tempFile, rootfs)
-            } finally {
-                if (tempFile.exists()) {
-                    tempFile.delete()
+                    outputHandler(OUTPUT_INFO, "> Extracting rootfs...")
+                    TarXzExtractor.extractFileTarXz(tempFile, rootfs)
+                } finally {
+                    if (tempFile.exists()) {
+                        tempFile.delete()
+                    }
                 }
             }
         }

@@ -28,6 +28,8 @@ class BuildEnvironmentService : Service() {
         const val MSG_INSTALL_ROOTFS = 7
         const val MSG_DELETE_ROOTFS = 8
         const val MSG_BUILD_DIR_ACCESS_GRANTED = 9
+
+        const val EXTRA_LOCAL_ROOTFS_URI = "local_rootfs_uri"
     }
 
     private lateinit var mMessenger: Messenger
@@ -195,9 +197,10 @@ class BuildEnvironmentService : Service() {
         val id = msg.arg1
         var result = 0
         var errorMessage: String? = null
+        val localUri = msg.data.getString(EXTRA_LOCAL_ROOTFS_URI)?.toUri()
 
         try {
-            mBuildEnvironment.installRootfs { type, line ->
+            mBuildEnvironment.installRootfs(localUri) { type, line ->
                 val outputMsg = Message.obtain(null, MSG_COMMAND_OUTPUT, id, type)
                 val outputData = Bundle()
                 outputData.putString("line", line)

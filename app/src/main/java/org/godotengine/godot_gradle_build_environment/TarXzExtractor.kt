@@ -1,6 +1,7 @@
 package org.godotengine.godot_gradle_build_environment
 
 import android.content.Context
+import android.net.Uri
 import android.system.ErrnoException
 import android.system.Os
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -8,9 +9,19 @@ import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
 
 object TarXzExtractor {
+    fun extractLocalTarXz(context: Context, localTarXzUri: Uri, destDir: File) {
+        context.contentResolver.openInputStream(localTarXzUri).use { inputStream ->
+            if (inputStream == null) {
+                throw IOException("Failed to open local rootfs file")
+            }
+            extractTarXz(inputStream, destDir)
+        }
+    }
+
     fun extractAssetTarXz(context: Context, assetTarXz: String, destDir: File) {
         context.assets.open(assetTarXz).use { inputStream ->
             extractTarXz(inputStream, destDir)

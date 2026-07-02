@@ -39,7 +39,6 @@ enum class AppTab(
 @Composable
 fun MainScreen(
     context: Context,
-    rootfs: File,
     rootfsReadyFile: File,
     settingsManager: SettingsManager,
 ) {
@@ -75,7 +74,6 @@ fun MainScreen(
 
             AppTab.ROOTFS -> RootfsScreen(
                 context = context,
-                rootfs = rootfs,
                 rootfsReadyFile = rootfsReadyFile,
                 modifier = Modifier.padding(innerPadding)
             )

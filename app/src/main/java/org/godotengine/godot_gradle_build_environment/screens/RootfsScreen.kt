@@ -4,12 +4,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
+import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +27,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -48,7 +53,6 @@ import java.io.File
 @Composable
 fun RootfsScreen(
     context: Context,
-    rootfs: File,
     rootfsReadyFile: File,
     modifier: Modifier = Modifier
 ) {
@@ -133,7 +137,6 @@ fun RootfsScreen(
         ) {
             RootfsInstallOrDeleteButton(
                 context,
-                rootfs,
                 rootfsReadyFile,
             )
         }
@@ -143,7 +146,6 @@ fun RootfsScreen(
 @Composable
 fun RootfsInstallOrDeleteButton(
     context: Context,
-    rootfs: File,
     rootfsReadyFile: File,
 ) {
     var fileExists by remember { mutableStateOf(rootfsReadyFile.exists()) }
@@ -154,6 +156,41 @@ fun RootfsInstallOrDeleteButton(
 
     var serviceMessenger by remember { mutableStateOf<Messenger?>(null) }
     var replyMessenger by remember { mutableStateOf<Messenger?>(null) }
+
+    fun sendMessage(msgType: Int, localUri: Uri? = null) {
+        if (serviceMessenger == null || replyMessenger == null) {
+            errorMessage = "Service not connected"
+            return
+        }
+
+        isLoading = true
+        errorMessage = null
+        progressMessages = emptyList()
+        commandId++
+
+        val msg = Message.obtain(null, msgType, commandId, 0)
+        msg.replyTo = replyMessenger
+
+        if (localUri != null) {
+            val data = Bundle()
+            data.putString(BuildEnvironmentService.EXTRA_LOCAL_ROOTFS_URI, localUri.toString())
+            msg.data = data
+        }
+
+        try {
+            serviceMessenger?.send(msg)
+        } catch (e: Exception) {
+            Log.e("RootfsScreen", "Error sending message: ${e.message}")
+            isLoading = false
+            errorMessage = "Failed to send command: ${e.message}"
+        }
+    }
+
+    val localFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            sendMessage(BuildEnvironmentService.MSG_INSTALL_ROOTFS, uri)
+        }
+    }
 
     DisposableEffect(context) {
         val connection = object : ServiceConnection {
@@ -202,29 +239,6 @@ fun RootfsInstallOrDeleteButton(
         }
     }
 
-    fun sendMessage(msgType: Int) {
-        if (serviceMessenger == null || replyMessenger == null) {
-            errorMessage = "Service not connected"
-            return
-        }
-
-        isLoading = true
-        errorMessage = null
-        progressMessages = emptyList()
-        commandId++
-
-        val msg = Message.obtain(null, msgType, commandId, 0)
-        msg.replyTo = replyMessenger
-
-        try {
-            serviceMessenger?.send(msg)
-        } catch (e: Exception) {
-            Log.e("RootfsScreen", "Error sending message: ${e.message}")
-            isLoading = false
-            errorMessage = "Failed to send command: ${e.message}"
-        }
-    }
-
     when {
         isLoading -> {
             CircularProgressIndicator()
@@ -262,12 +276,18 @@ fun RootfsInstallOrDeleteButton(
         }
 
         !fileExists -> {
-            Text(stringResource(R.string.missing_rootfs_message))
+            Text(stringResource(R.string.missing_rootfs_message), modifier = Modifier.padding(16.dp))
             Spacer(modifier = Modifier.height(20.dp))
             Button(onClick = {
                 sendMessage(BuildEnvironmentService.MSG_INSTALL_ROOTFS)
             }) {
                 Text(stringResource(R.string.install_rootfs_button))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = {
+                localFilePicker.launch(arrayOf("application/x-xz"))
+            }) {
+                Text(stringResource(R.string.install_rootfs_local_button))
             }
         }
 
