@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
@@ -193,5 +194,13 @@ object FileUtils {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val uriString = prefs.getString(projectPath, null)
         return uriString?.toUri()
+    }
+
+    fun isValidDirSelected(context: Context, projectTreeUri: Uri): Boolean {
+        val treeDocumentId = DocumentsContract.getTreeDocumentId(projectTreeUri) ?: return false
+        // Check if "project.godot" file exists.
+        val projectGodotUri = DocumentsContract.buildDocumentUriUsingTree(projectTreeUri, "$treeDocumentId/project.godot")
+        val godotFile = DocumentFile.fromSingleUri(context, projectGodotUri)
+        return godotFile?.exists() == true
     }
 }

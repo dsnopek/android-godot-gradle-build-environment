@@ -207,7 +207,13 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
 
             projectTreeUri = waitForDirectoryAccess(DIR_ACCESS_WAIT_DURATION)
                 ?: throw Exception("Directory access not granted in time. Build canceled.")
-            outputHandler(OUTPUT_INFO, "Access granted for $projectPath.\nStarting Gradle build...")
+
+            if (!FileUtils.isValidDirSelected(context, projectTreeUri)) {
+                throw Exception("The selected folder is not a valid project directory. Please try exporting again and select $projectPath." +
+                    "\nIf the problem persists, please create a bug report at [color=#3182CE][url]https://github.com/godotengine/android-editor-buildenv-app/issues[/url][/color]")
+            }
+
+            outputHandler(OUTPUT_INFO, "Access granted for project directory. Starting Gradle build...")
             FileUtils.saveProjectTreeUri(context, projectPath, projectTreeUri)
 
             // Notify user if limit is reached so they can clear older projects.
