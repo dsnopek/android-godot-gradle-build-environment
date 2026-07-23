@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -22,12 +23,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -46,18 +51,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.godotengine.godot_gradle_build_environment.AppPaths
+import org.godotengine.godot_gradle_build_environment.BuildConfig
 import org.godotengine.godot_gradle_build_environment.BuildEnvironmentService
 import org.godotengine.godot_gradle_build_environment.CachedProject
 import org.godotengine.godot_gradle_build_environment.FileUtils
 import org.godotengine.godot_gradle_build_environment.ProjectInfo
 import org.godotengine.godot_gradle_build_environment.R
+import org.godotengine.godot_gradle_build_environment.Utils
 
 @Composable
 fun ProjectsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     var projects by remember { mutableStateOf(loadCachedProjects(context)) }
     val sizeCache = remember { mutableStateMapOf<String, Long>() }
     val deletingProjects = rememberSaveable { mutableStateListOf<String>() }
@@ -65,6 +78,7 @@ fun ProjectsScreen(modifier: Modifier = Modifier) {
     val refreshTriggers = remember { mutableStateMapOf<String, Int>() }
     var serviceMessenger by remember { mutableStateOf<Messenger?>(null) }
     var replyMessenger by remember { mutableStateOf<Messenger?>(null) }
+    var isGodotInstalled by remember { mutableStateOf(checkGodotInstalled(context)) }
 
     DisposableEffect(context) {
         val connection = object : ServiceConnection {
@@ -93,8 +107,16 @@ fun ProjectsScreen(modifier: Modifier = Modifier) {
         intent.setPackage(context.packageName)
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
 
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isGodotInstalled = checkGodotInstalled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
         onDispose {
             context.unbindService(connection)
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -103,6 +125,15 @@ fun ProjectsScreen(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .padding(16.dp),
     ) {
+        CompanionStatusBanner(
+            isGodotInstalled = isGodotInstalled,
+            onInstallClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Utils.GODOT_DOWNLOADS_PAGE.toUri())
+                context.startActivity(intent)
+            },
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
         Text(
             text = stringResource(R.string.project_caches),
             style = MaterialTheme.typography.headlineMedium,
@@ -288,4 +319,107 @@ private fun ProjectItem(
 private fun loadCachedProjects(context: Context): List<CachedProject> {
     val projectsDir = AppPaths.getProjectDir(context)
     return ProjectInfo.getAllCachedProjects(projectsDir)
+}
+
+@Composable
+private fun CompanionStatusBanner(
+    isGodotInstalled: Boolean,
+    onInstallClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (!isGodotInstalled) {
+        Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            tonalElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.icon_info),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.editor_not_installed_title),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Text(
+                            text = stringResource(R.string.editor_not_installed_msg),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onInstallClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Get App")
+                }
+            }
+        }
+    } else {
+        Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 1.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.icon_info),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.app_info_msg),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+private fun checkGodotInstalled(context: Context): Boolean {
+    val pm = context.packageManager
+    val basePackage = BuildConfig.EDITOR_PACKAGE
+    val possiblePackages = listOf(
+        basePackage,
+        "$basePackage.release",
+        "$basePackage.debug"
+    )
+
+    return possiblePackages.any { pkg ->
+        try {
+            pm.getPackageInfo(pkg, 0)
+            true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
 }

@@ -30,4 +30,7 @@
     <string name="tab_projects">Projects</string>
     <string name="tab_rootfs">Rootfs</string>
     <string name="tab_settings">Settings</string>
+    <string name="app_info_msg">This companion app runs in the background when you trigger a Gradle export. Use the Godot Editor app to build and export projects.</string>
+    <string name="editor_not_installed_title">Godot Editor is not installed</string>
+    <string name="editor_not_installed_msg">This is a companion app for Godot Editor. Install the main engine app to build and export projects.</string>
 </resources>

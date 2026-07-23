@@ -59,15 +59,24 @@ android {
     productFlavors {
         android {
             dimension "android_distribution"
+            def godotEditorPackage = "org.godotengine.editor.v4"
+            manifestPlaceholders = [editorPackage: godotEditorPackage]
+            buildConfigField("String", "EDITOR_PACKAGE", "\"${godotEditorPackage}\"")
             getIsDefault().set(true)
         }
         horizonos {
             dimension "android_distribution"
             versionNameSuffix "-horizonos"
+            def godotEditorPackage = "org.godotengine.editor.v4.meta"
+            manifestPlaceholders = [editorPackage: godotEditorPackage]
+            buildConfigField("String", "EDITOR_PACKAGE", "\"${godotEditorPackage}\"")
         }
         picoos {
             dimension "android_distribution"
             versionNameSuffix "-picoos"
+            def godotEditorPackage = "org.godotengine.editor.v4.pico"
+            manifestPlaceholders = [editorPackage: godotEditorPackage]
+            buildConfigField("String", "EDITOR_PACKAGE", "\"${godotEditorPackage}\"")
         }
     }
 
