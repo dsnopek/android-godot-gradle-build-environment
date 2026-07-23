@@ -21,6 +21,8 @@ object Utils {
     const val ACTION_REQUEST_DIRECTORY_ACCESS = "action_request_dir_access"
     const val DIRECTORY_ACCESS_REQUEST = 1001
 
+    const val GODOT_DOWNLOADS_PAGE = "https://godotengine.org/download/android/"
+
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
