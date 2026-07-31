@@ -202,7 +202,7 @@ object FileUtils {
             }
         }
     }
-    
+
     fun saveProjectTreeUri(context: Context, projectPath: String, projectTreeUri: Uri) {
         context.contentResolver.takePersistableUriPermission(
             projectTreeUri,

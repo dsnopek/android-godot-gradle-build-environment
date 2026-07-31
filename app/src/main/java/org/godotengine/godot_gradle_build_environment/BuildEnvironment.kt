@@ -36,7 +36,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         private const val ROOTFS_ASSET_PATH = "linux-rootfs/$ROOTFS_FILENAME"
 
         private const val DIR_ACCESS_WAIT_DURATION = 120_000L // in milliseconds
-    
+
     }
 
     private var currentProcess: Process? = null
@@ -102,7 +102,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         env["PROOT_LOADER_32"] = File(libDir, "libproot-loader32.so").absolutePath
         //env["PROOT_NO_SECCOMP"] = "1"
         //env["PROOT_VERBOSE"] = "9"
-        
+
         //val qemu = File(libDir, "libqemu-x86_64.so")
 
         val cmd = buildList {
@@ -231,7 +231,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
 
             outputHandler(OUTPUT_INFO, "Access granted for project directory. Starting Gradle build...")
             FileUtils.saveProjectTreeUri(context, projectPath, projectTreeUri)
-            
+
             // Notify user if limit is reached so they can clear older projects.
             val persistedCount = context.contentResolver.persistedUriPermissions.size
             val limit = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) 128 else 512
@@ -243,7 +243,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
                 )
             }
         }
-        
+
         if (!workDir.exists()) {
             workDir.mkdirs()
             ProjectInfo.writeToDirectory(context, workDir, projectPath, gradleBuildDir, projectTreeUri)
@@ -401,6 +401,11 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         }
     }
 
+    private fun findAapt2Jars(root: File): List<File> {
+        val regex = Regex("""aapt2-.*-linux\.jar""")
+        return root.walkTopDown()
+            .filter { it.isFile && regex.matches(it.name) }
+            .toList()
     /**
      * Patches AAPT2 JAR files in the specified directory by replacing the aapt2 binary
      * with the one bundled in the rootfs.
@@ -410,11 +415,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
      * @param outputHandler Handler for output messages
      * @return true if all patches succeeded or no JARs found; otherwise, false if any patch failed
      */
-    private fun findAapt2Jars(root: File): List<File> {
-        val regex = Regex("""aapt2-.*-linux\.jar""")
-        return root.walkTopDown()
-            .filter { it.isFile && regex.matches(it.name) }
-            .toList()
+    
     }
 
     private fun patchAapt2Jars(hostDir: File, boundPath: String, outputHandler: (Int, String) -> Unit): Boolean {
@@ -529,7 +530,6 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         } else {
             fixGradleArgs(projectPath, rawGradleArgs)
         }
-
         var result = executeGradleInternal(gradleArgs, workDir, captureOutputHandler)**/
 
         val stderr = stderrBuilder.toString()
@@ -586,9 +586,8 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
                     Thread.currentThread().interrupt()
                 }
             }
-
             // We reset the value to `null` after returning it to avoid returning a previous value when this method is
-            // invoked again.  
+            // invoked again.
             return grantedTreeUri.getAndSet(null)
         }
     }

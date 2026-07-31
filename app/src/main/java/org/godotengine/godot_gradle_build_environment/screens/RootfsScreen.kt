@@ -157,7 +157,7 @@ fun RootfsInstallOrDeleteButton(
     var extractionProgress by rememberSaveable { mutableStateOf("") }
     
     var commandId by remember { mutableIntStateOf(0) }
-    
+
     var serviceMessenger by remember { mutableStateOf<Messenger?>(null) }
     var replyMessenger by remember { mutableStateOf<Messenger?>(null) }
 

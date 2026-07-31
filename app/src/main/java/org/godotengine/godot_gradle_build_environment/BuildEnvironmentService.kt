@@ -277,4 +277,5 @@ class BuildEnvironmentService : Service() {
             Log.e(TAG, "Error sending result to client: ${e.message}")
         }
     }
+
 }
