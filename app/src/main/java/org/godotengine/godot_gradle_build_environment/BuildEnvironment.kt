@@ -35,7 +35,8 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         private const val ROOTFS_FILENAME = "alpine-android-35-jdk17.tar.xz"
         private const val ROOTFS_ASSET_PATH = "linux-rootfs/$ROOTFS_FILENAME"
 
-        private const val DIR_ACCESS_WAIT_DURATION = 120_000L 
+        private const val DIR_ACCESS_WAIT_DURATION = 120_000L // in milliseconds
+    
     }
 
     private var currentProcess: Process? = null
@@ -99,15 +100,16 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         env["PROOT_TMP_DIR"] = prootTmpDir.absolutePath
         env["PROOT_LOADER"] = File(libDir, "libproot-loader.so").absolutePath
         env["PROOT_LOADER_32"] = File(libDir, "libproot-loader32.so").absolutePath
-        //env["PROOT_NO_SECCOMP"] = "1" 
+        //env["PROOT_NO_SECCOMP"] = "1"
         //env["PROOT_VERBOSE"] = "9"
-        // PROOT_NO_SECCOMP and PROOT_VERBOSE kept commented out for system stability
+        
+        //val qemu = File(libDir, "libqemu-x86_64.so")
 
         val cmd = buildList {
             addAll(
                 listOf(
                     proot,
-                    // "-0" kept commented out to prevent strict OS access crashes
+                    //"-0",
                     "-R", rootfs,
                     "-w", workDir,
                     //"-q", qemu.absolutePath,
@@ -223,11 +225,23 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
                 ?: throw Exception("Directory access not granted in time. Build canceled.")
 
             if (!FileUtils.isValidDirSelected(context, projectTreeUri)) {
-                throw Exception("The selected folder is not a valid project directory.")
+                throw Exception("The selected folder is not a valid project directory. Please try exporting again and select $projectPath." +
+                    "\nIf the problem persists, please create a bug report at [color=#3182CE][url]https://github.com/godotengine/android-editor-buildenv-app/issues[/url][/color]")
             }
 
             outputHandler(OUTPUT_INFO, "Access granted for project directory. Starting Gradle build...")
             FileUtils.saveProjectTreeUri(context, projectPath, projectTreeUri)
+            
+            // Notify user if limit is reached so they can clear older projects.
+            val persistedCount = context.contentResolver.persistedUriPermissions.size
+            val limit = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) 128 else 512
+            if (persistedCount == limit) {
+                outputHandler(
+                    OUTPUT_INFO, "Warning: Persisted directory access limit reached." +
+                        "This build will continue, but new projects would require " +
+                        "clearing older ones in ${context.getString(R.string.app_launcher_name)} app"
+                )
+            }
         }
         
         if (!workDir.exists()) {
@@ -252,7 +266,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         outputHandler(OUTPUT_INFO, "> Project $finishText!")
         return workDir
     }
-    
+
     private fun fixGradleArgs(projectPath: String, rawGradleArgs: List<String>): List<String> {
         val normalizedProjectPath = projectPath.trimEnd('/')
         val verboseArgs = rawGradleArgs.toMutableList()
@@ -262,7 +276,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
                 arg.startsWith("-Pdebug_keystore_file=") -> "-Pdebug_keystore_file=/project/.android/debug.keystore"
                 arg.startsWith("-Prelease_keystore_file=") -> "-Prelease_keystore_file=/project/.android/release.keystore"
                 arg.startsWith("-Paddons_directory=") -> "-Paddons_directory=/project/${FileUtils.ADDONS_DIR_NAME}"
-                
+
                 arg.startsWith("-Pplugins_local_binaries=") -> {
                     val prefix = "-Pplugins_local_binaries="
                     val value = arg.removePrefix(prefix)
@@ -278,12 +292,12 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
                     
                     prefix + updatedPaths
                 }
-                
+
                 else -> arg
             }
         }
     }
-    
+
     fun cleanProject(projectPath: String, gradleBuildDir: String) {
         val workDir = Utils.getProjectCacheDir(context, projectPath, gradleBuildDir)
         if (workDir.exists()) {
@@ -298,7 +312,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
             gradleCache.deleteRecursively()
         }
     }
-    
+
     fun installRootfs(localUri: Uri? = null, outputHandler: (Int, String) -> Unit) {
         val rootfs = File(this.rootfs)
 
@@ -370,7 +384,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         }
         outputHandler(OUTPUT_INFO, "> Rootfs installation complete!")
     }
-    
+
     fun deleteRootfs() {
         val rootfs = File(this.rootfs)
         if (rootfs.exists()) {
@@ -387,6 +401,15 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         }
     }
 
+    /**
+     * Patches AAPT2 JAR files in the specified directory by replacing the aapt2 binary
+     * with the one bundled in the rootfs.
+     *
+     * @param hostDir The directory on the host filesystem to search for AAPT2 JARs
+     * @param boundPath The path where hostDir is bound inside the proot environment
+     * @param outputHandler Handler for output messages
+     * @return true if all patches succeeded or no JARs found; otherwise, false if any patch failed
+     */
     private fun findAapt2Jars(root: File): List<File> {
         val regex = Regex("""aapt2-.*-linux\.jar""")
         return root.walkTopDown()
@@ -424,7 +447,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
 
         return true
     }
-    
+
     private fun executeGradleInternal(gradleArgs: List<String>, workDir: File, outputHandler: (Int, String) -> Unit): Int {
         val gradleCache = AppPaths.getGlobalGradleCache(context)
         gradleCache.mkdirs()
@@ -461,8 +484,7 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         gradleBuildDir: String,
         outputHandler: (Int, String) -> Unit
     ): Int {
-    
-       if (!isRootfsReady()) {
+        if (!isRootfsReady()) {
             outputHandler(OUTPUT_STDERR, "Rootfs isn't installed. Install it in the Godot Gradle Build Environment app.")
             return 255
         }
@@ -476,19 +498,6 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
             outputHandler(OUTPUT_STDERR, "Unable to setup project: ${e.message}")
             return 255
         }
-
-    
-        /*if (!isRootfsReady()) {
-            outputHandler(OUTPUT_STDERR, "Rootfs isn't installed. Install it in the Godot Gradle Build Environment app.")
-            return 255
-        }
-
-        val workDir = try {
-            setupProject(projectPath, gradleBuildDir, outputHandler)
-        } catch (e: Exception) {
-            outputHandler(OUTPUT_STDERR, "Unable to setup project: ${e.message}")
-            return 255
-        }*/
 
         val stderrBuilder = StringBuilder()
         val captureOutputHandler: (Int, String) -> Unit = { type, line ->
@@ -514,31 +523,37 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         var result = executeGradleInternal(gradleArgs, workDir, captureOutputHandler)
 
         
-        /*val gradleArgs =  if (BuildConfig.FLAVOR == "picoos" || BuildConfig.FLAVOR == "horizonos") {
+        /**val gradleArgs =  if (BuildConfig.FLAVOR == "picoos" || BuildConfig.FLAVOR == "horizonos") {
+            // GABE has full storage access on XR devices, so we are not pulling addons dir, or keystore files.
             rawGradleArgs
         } else {
-            fixGradleArgs(projectPath, rawGradleArgs) 
+            fixGradleArgs(projectPath, rawGradleArgs)
         }
-        
-        var result = executeGradleInternal(gradleArgs, workDir, captureOutputHandler)*/
+
+        var result = executeGradleInternal(gradleArgs, workDir, captureOutputHandler)**/
 
         val stderr = stderrBuilder.toString()
         if (result == 0 && stderr.contains("BUILD FAILED")) {
+            // Sometimes Gradle builds fail, but it still gives an exit code of 0.
             result = 1
         }
         stderrBuilder.clear()
 
+        // Detect if we hit the AAPT2 issue.
         if (result != 0 && stderr.contains(Regex("""AAPT2 aapt2.*Daemon startup failed"""))) {
             outputHandler(OUTPUT_INFO, "> Detected AAPT2 issue - attempting to patch the JAR files...")
 
+            // Patch AAPT2 JARs in both the project directory and the global gradle cache
             val gradleCache = AppPaths.getGlobalGradleCache(context)
             val patchSuccess = patchAapt2Jars(workDir, "/project", outputHandler) &&
                 patchAapt2Jars(gradleCache, "/project/?", outputHandler)
 
             if (!patchSuccess) {
+                // If patching failed, there's not much else we can do.
                 return 1
             }
 
+            // Now, try running Gradle again!
             outputHandler(OUTPUT_INFO, "> Retrying Gradle build...")
             result = executeGradleInternal(gradleArgs, workDir, captureOutputHandler)
             val stderr2 = stderrBuilder.toString()
@@ -571,6 +586,9 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
                     Thread.currentThread().interrupt()
                 }
             }
+
+            // We reset the value to `null` after returning it to avoid returning a previous value when this method is
+            // invoked again.  
             return grantedTreeUri.getAndSet(null)
         }
     }
