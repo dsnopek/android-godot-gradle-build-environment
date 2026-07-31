@@ -406,6 +406,8 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
         return root.walkTopDown()
             .filter { it.isFile && regex.matches(it.name) }
             .toList()
+        }
+
     /**
      * Patches AAPT2 JAR files in the specified directory by replacing the aapt2 binary
      * with the one bundled in the rootfs.
@@ -415,8 +417,6 @@ class BuildEnvironment(private val context: Context, private val rootfs: String,
      * @param outputHandler Handler for output messages
      * @return true if all patches succeeded or no JARs found; otherwise, false if any patch failed
      */
-    
-    }
 
     private fun patchAapt2Jars(hostDir: File, boundPath: String, outputHandler: (Int, String) -> Unit): Boolean {
         val jarFiles = findAapt2Jars(hostDir)

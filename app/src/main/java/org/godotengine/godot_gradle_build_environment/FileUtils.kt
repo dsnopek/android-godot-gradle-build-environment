@@ -91,8 +91,8 @@ object FileUtils {
 
         return String.format("%.1f %s", value, units[unitIndex])
     }
-    
-       fun importAndroidProject(
+
+    fun importAndroidProject(
         context: Context, 
         projectTreeUri: Uri, 
         gradleBuildDir: String, 
@@ -139,7 +139,7 @@ object FileUtils {
             onProgress("> Importing v1 Plugins directory...")
             copyDirectoryMerge(context, pluginsDir, destDir, onProgress)
         }
-
+    }
 
         /*if (pluginsDir != null) {
             val localPlugins = File(destDir.parentFile, "plugins")
@@ -150,8 +150,7 @@ object FileUtils {
             onProgress("> Importing v1 Plugins directory...")
             copyDirectoryMerge(context, pluginsDir, localPlugins, onProgress)
         }*/
-    }
-    
+
     private fun findDirByPath(parent: DocumentFile, relativePath: String): DocumentFile? {
         var current: DocumentFile? = parent
 
