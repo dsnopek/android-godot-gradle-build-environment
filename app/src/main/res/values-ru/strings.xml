@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Godot Android Build Environment</string>
+    <string name="app_launcher_name">GABE</string>
+    <string name="install_rootfs_button">Установить Rootfs</string>
+    <string name="install_rootfs_local_button">Установить из локального файла</string>
+    <string name="delete_rootfs_button">Удалить Rootfs</string>
+    <string name="installing_rootfs_message">Установка Rootfs...\nЭто может занять несколько минут.</string>
+    <string name="deleting_rootfs_message">Удаление Rootfs...</string>
+    <string name="missing_rootfs_message">Rootfs не установлен!\nСборки Gradle будут недоступны, пока вы его не установите.</string>
+    <string name="rootfs_ready_message">Rootfs, похоже, установлен!</string>
+    <string name="gradle_build_dir_label">Каталог сборки Gradle</string>
+    <string name="notification_perm_request_title">Требуется разрешение на уведомления</string>
+    <string name="notification_perm_request_message">GABE требуется разрешение на отправку уведомлений, чтобы запросить доступ к каталогу проекта при запуске сборки Gradle. Без этого сборка не сможет продолжиться.</string>
+    <string name="perm_request_positive_btn">Разрешить</string>
+    <string name="perm_request_negative_btn">Не сейчас</string>
+    <string name="dir_access_notification_channel_name">Доступ к проекту</string>
+    <string name="dir_access_notification_channel_description">Запрашивает доступ к каталогу проекта</string>
+    <string name="dir_access_notification_title">Требуется доступ к каталогу</string>
+    <string name="dir_access_notification_message">Нажмите, чтобы предоставить доступ к каталогу проекта</string>
+    <string name="clear_project_cache_setting">Очищать кэш проекта после завершения сборки</string>
+    <string name="delete_cache">Удалить кэш</string>
+    <string name="project_caches">Кэши проектов</string>
+    <string name="no_project_cache_label">Кэши проектов отсутствуют</string>
+    <string name="refresh_project_dir_size">Обновить размер</string>
+    <string name="delete_project_cache">Удалить кэш проекта</string>
+    <string name="update_available">Доступно обновление</string>
+    <string name="rootfs_update_is_available_text">Доступна более новая версия Rootfs (%1$s). Текущая версия: %2$s</string>
+    <string name="rootfs_update_instruction_text">Чтобы обновить Rootfs, удалите его и установите заново.</string>
+    <string name="global_gradle_cache">Глобальный кэш Gradle</string>
+    <string name="tab_projects">Проекты</string>
+    <string name="tab_rootfs">Rootfs</string>
+    <string name="tab_settings">Настройки</string>
+    <string name="app_info_msg">Это вспомогательное приложение работает в фоновом режиме при запуске экспорта через Gradle. Для сборки и экспорта проектов используйте приложение Godot Editor.</string>
+    <string name="editor_not_installed_title">Godot Editor не установлен</string>
+    <string name="editor_not_installed_msg">Это вспомогательное приложение для Godot Editor. Установите основное приложение движка, чтобы собирать и экспортировать проекты.</string>
+</resources>
